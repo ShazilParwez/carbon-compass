@@ -26,6 +26,22 @@ const navigation = [
   { name: 'Profile', href: '/profile', icon: User },
 ];
 
+const prefetchMap = {
+  '/dashboard': () => import('../../pages/Dashboard/Dashboard'),
+  '/assessment': () => import('../../pages/CarbonAssessment/CarbonAssessment'),
+  '/decision-assistant': () => import('../../pages/DecisionAssistant/DecisionAssistant'),
+  '/coach': () => import('../../pages/AICoach/AICoach'),
+  '/simulator': () => import('../../pages/ImpactSimulator/ImpactSimulator'),
+  '/challenges': () => import('../../pages/EcoChallenges/EcoChallenges'),
+  '/profile': () => import('../../pages/Profile/Profile'),
+};
+
+const prefetchRoute = (href) => {
+  if (prefetchMap[href]) {
+    prefetchMap[href]().catch(() => {});
+  }
+};
+
 export default function DashboardLayout() {
   const location = useLocation();
   const [darkMode, setDarkMode] = useState(false);
@@ -67,6 +83,8 @@ export default function DashboardLayout() {
               <Link
                 key={item.name}
                 to={item.href}
+                onMouseEnter={() => prefetchRoute(item.href)}
+                onFocus={() => prefetchRoute(item.href)}
                 className={`flex items-center px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive 
                     ? 'bg-brand-primary/10 text-brand-primary dark:text-brand-accent' 
