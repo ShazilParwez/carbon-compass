@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --brand-dark: 162 90% 9%;
+    --brand-primary: 161 94% 30%;
+    --brand-secondary: 174 84% 32%;
+    --brand-accent: 160 84% 39%;
+    --brand-light: 152 68% 96%;
+    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+  }
+
+  /* High Contrast Theme */
+  [data-theme='high-contrast'] {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --brand-dark: 0 0% 0%;
+    --brand-primary: 0 0% 0%;
+    --brand-secondary: 0 0% 0%;
+    --brand-accent: 0 0% 0%;
+    --brand-light: 0 0% 90%;
+  }
+  
+  .dark[data-theme='high-contrast'] {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --brand-dark: 0 0% 100%;
+    --brand-primary: 0 0% 100%;
+    --brand-secondary: 0 0% 100%;
+    --brand-accent: 0 0% 100%;
+    --brand-light: 0 0% 10%;
+  }
+
+  /* Color-Blind Friendly Theme (Blue/Orange safe palette) */
+  [data-theme='color-blind'] {
+    --brand-dark: 215 25% 27%;
+    --brand-primary: 221 83% 53%;
+    --brand-secondary: 24 98% 50%;
+    --brand-accent: 217 91% 60%;
+    --brand-light: 214 100% 97%;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 antialiased;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/50 shadow-sm;
+  }
+  
+  .glass-card {
+    @apply glass rounded-2xl p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-1;
+  }
+
+  /* Reduced Motion */
+  .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Dyslexia-Friendly Reading Mode */
+  .reading-mode {
+    font-family: 'OpenDyslexic', 'Comic Sans MS', 'Arial', sans-serif !important;
+    line-height: 2 !important;
+    letter-spacing: 0.12em !important;
+    word-spacing: 0.16em !important;
+  }
+  
+  .reading-mode p, .reading-mode li {
+    margin-bottom: 2em !important;
+  }
+
+  .reading-mode .reading-mode-only {
+    display: block !important;
+  }
+
+  /* Visible Focus Indicators */
+  *:focus-visible {
+    @apply outline-none ring-4 ring-brand-primary ring-offset-2 dark:ring-offset-slate-900;
+  }
+}
