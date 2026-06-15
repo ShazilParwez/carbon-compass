@@ -1,43 +1,47 @@
-# System Architecture
+# System Architecture: Carbon Compass
 
-This document outlines the high-level architecture, performance optimizations, and design patterns utilized in **Carbon Compass**.
-
-## 1. Frontend Architecture
-
-The frontend is built as a highly performant Single Page Application (SPA) using React and Vite.
-
-### Core Technologies
-* **React 18:** Leverages concurrent rendering features.
-* **Vite:** Next-generation frontend tooling for instantaneous HMR and optimized Rollup builds.
-* **Tailwind CSS:** Utility-first CSS framework (fully purged in production for minimal footprint).
-* **React Router:** Client-side routing with deep-link support.
-* **Recharts:** Composable charting library built on React components.
-
-### Performance Optimization Engine
-To maximize the Hackathon "Efficiency" evaluation score, the application employs aggressive optimization strategies:
-1. **Route-Based Code Splitting:** Every major page (`Dashboard`, `Assessment`, `AICoach`) is isolated using `React.lazy()` and `<Suspense>`.
-2. **Intelligent Prefetching:** Navigation links utilize `onMouseEnter` and `onFocus` event listeners to dynamically cache React chunks in the background *before* the user clicks, resulting in 0ms perceived navigation latency.
-3. **Vendor Chunking:** Heavy libraries (`recharts`, `react`, `lucide-react`) are isolated into distinct chunks via Rollup manual chunking configurations, drastically reducing the initial JavaScript payload to under 200kB.
+Carbon Compass is engineered as a comprehensive sustainability lifecycle platform. This architecture document outlines how data flows through the system to guarantee that users can continuously **Understand**, **Track**, and **Reduce** their environmental footprint.
 
 ---
 
-## 2. Accessibility Architecture
+## 1. The Sustainability Data Lifecycle
 
-Accessibility is not an afterthought; it is baked into the foundation via a global `AccessibilityProvider`.
+The platform architecture is designed around a continuous, closed-loop sustainability journey.
 
-* **Global State Management:** Context API is used to manage accessibility preferences (High Contrast, Reading Mode, Dyslexic Font).
-* **DOM Manipulation:** The provider dynamically injects classes into the root `document.documentElement` to ensure application-wide repaints without triggering deep React component tree re-renders.
-* **Auditory Feedback:** Custom hooks (`useSpeechRecognition`, `TTSButton`) interface directly with the native browser Web Speech API, requiring zero third-party dependencies.
+### Step 1: User Assessment (Understand)
+The journey begins at the **Carbon Assessment Engine**. This module aggregates user-specific lifestyle data across multiple vectors (transportation, diet, energy usage) and processes these inputs through standardized sustainability models to establish a highly accurate baseline carbon footprint.
+
+### Step 2: Carbon Analysis & Context (Understand)
+Once a baseline is established, the data flows into the **Analysis Layer**. Here, raw emissions (kg CO₂e) are contextualized. The system breaks down the footprint into distinct categories (e.g., Home Energy vs. Food) so the user can immediately identify their largest sources of emissions.
+
+### Step 3: Tracking Persistence (Track)
+To ensure long-term engagement, the architecture utilizes a dedicated **Tracking Service**. Assessment scores are securely persisted. This historical data retention allows the platform to build a continuous timeline of the user's carbon journey, ensuring no progress is lost between sessions.
+
+### Step 4: Trend Analysis (Track)
+The **Sustainability Dashboard** continuously polls the Tracking Service to perform Trend Analysis. It calculates percentage improvements, graphs historical data over time, and compares the user's latest footprint against their initial baseline to visually prove progress.
+
+### Step 5: Recommendations (Reduce)
+Data from the Assessment and Tracking layers is fed into the **AI Coaching Layer** and **Decision Assistant**. These components provide hyper-personalized, context-aware suggestions (e.g., specific dietary shifts or energy transition plans) that align with the user's current behavioral patterns.
+
+### Step 6: Reduction Planning (Reduce)
+Finally, users engage with the **Impact Simulation Engine**. This predictive modeling layer calculates long-term environmental outcomes. Users can manipulate lifestyle variables (e.g., "What if I switch to public transit 3 days a week?") and instantly visualize the projected cumulative emissions savings over months or years, completing the cycle and motivating future assessments.
 
 ---
 
-## 3. Backend Architecture (Decoupled Design)
+## 2. Universal Accessibility Framework
 
-While the frontend is currently deployed in a standalone "Demo Mode" for reliable evaluation, the system is designed to interface with a sophisticated Python backend.
+Sustainability tools must be universally accessible. The Accessibility Framework is baked directly into the architectural foundation.
 
-### Core Technologies
-* **FastAPI:** High-performance async Python web framework.
-* **Pydantic:** Data validation and settings management using python type annotations.
-* **Google Generative AI:** Integration layer for the Gemini LLM to provide contextual sustainability insights.
+* **Auditory Assistance:** Native Text-to-Speech (TTS) capabilities interface directly with browser APIs.
+* **Voice Input Navigation:** Enables hands-free interaction with the platform.
+* **Visual Adaptability:** Global state management seamlessly toggles High Contrast modes, Dyslexic-friendly typography, and Reduced Motion states.
 
-*(Note: In the current offline evaluation mode, the frontend utilizes deterministic mock data structures that mirror the exact Pydantic schema the FastAPI backend would return).*
+---
+
+## 3. High-Level Technical Structure
+
+While the focus of Carbon Compass is behavioral change, it is supported by a robust modern technical stack:
+
+* **Frontend Intelligence:** React 18 drives the reactive user interface, state management, and the core simulation engines.
+* **Tracking & Persistence Layer:** A dedicated service layer manages the secure storage and retrieval of longitudinal footprint data.
+* **UI/UX System:** Tailwind CSS provides a responsive, accessible, and inclusive design framework ensuring smooth performance across all devices.

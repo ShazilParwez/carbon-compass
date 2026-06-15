@@ -1,13 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Sliders, TrendingDown, Calendar, ArrowRight } from 'lucide-react';
-
-const habits = [
-  { id: 'meat', label: 'Go Meatless 2 Days/Week', savingMonthly: 45, savingAnnual: 540 },
-  { id: 'transit', label: 'Take Transit to Work', savingMonthly: 120, savingAnnual: 1440 },
-  { id: 'thermostat', label: 'Lower Thermostat by 2°', savingMonthly: 30, savingAnnual: 360 },
-  { id: 'compost', label: 'Start Composting', savingMonthly: 15, savingAnnual: 180 },
-];
+import { behavioralShiftImpacts } from '../../constants/simulationData';
+import { calculateMonthlyEmissionSavings, calculateAnnualEmissionSavings, generateEmissionsTrajectory } from '../../utils/simulationMath';
 
 export default function ImpactSimulator() {
   const [selectedHabits, setSelectedHabits] = useState([]);
@@ -18,22 +13,12 @@ export default function ImpactSimulator() {
     );
   };
 
-  const totalMonthlySavings = selectedHabits.reduce((acc, id) => {
-    const habit = habits.find(h => h.id === id);
-    return acc + (habit ? habit.savingMonthly : 0);
-  }, 0);
-
-  const totalAnnualSavings = totalMonthlySavings * 12;
+  const totalMonthlySavings = useMemo(() => calculateMonthlyEmissionSavings(selectedHabits, behavioralShiftImpacts), [selectedHabits]);
+  const totalAnnualSavings = useMemo(() => calculateAnnualEmissionSavings(totalMonthlySavings), [totalMonthlySavings]);
 
   // Generate chart data: baseline vs projected over 12 months
   const baselineMonthly = 1200; // arbitrary baseline kg CO2
-  const chartData = Array.from({ length: 12 }).map((_, i) => {
-    return {
-      month: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],
-      Baseline: baselineMonthly,
-      Projected: baselineMonthly - totalMonthlySavings
-    };
-  });
+  const chartData = useMemo(() => generateEmissionsTrajectory(baselineMonthly, totalMonthlySavings), [totalMonthlySavings]);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -48,7 +33,7 @@ export default function ImpactSimulator() {
         {/* Habit Toggles */}
         <div className="lg:col-span-1 space-y-4">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Select Changes to Simulate</h3>
-          {habits.map(habit => {
+          {behavioralShiftImpacts.map(habit => {
             const isSelected = selectedHabits.includes(habit.id);
             return (
               <div 

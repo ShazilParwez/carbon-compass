@@ -2,13 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles, Mic } from 'lucide-react';
 import useSpeechRecognition from '../../hooks/useSpeechRecognition';
 import TTSButton from '../../components/common/TTSButton';
-
-const initialMessages = [
-  { id: 1, role: 'assistant', text: "Hi there! I'm your Carbon Compass AI Coach. How can I help you live more sustainably today?" }
-];
+import { initialSustainabilityContext } from '../../constants/coachData';
+import { generateSustainabilityAdvice } from '../../services/aiCoachService';
 
 export default function AICoach() {
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(initialSustainabilityContext);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
@@ -28,7 +26,7 @@ export default function AICoach() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -38,16 +36,10 @@ export default function AICoach() {
     resetTranscript();
     setIsTyping(true);
 
-    // Mock AI response
-    setTimeout(() => {
-      setIsTyping(false);
-      const aiMsg = { 
-        id: Date.now(), 
-        role: 'assistant', 
-        text: "That's a great question! Replacing your incandescent bulbs with LEDs can reduce lighting energy use by up to 90%. Over a year, this small change can save you around 40kg of CO₂ per bulb." 
-      };
-      setMessages(prev => [...prev, aiMsg]);
-    }, 1500);
+    // Process offline generative scenario
+    const advice = await generateSustainabilityAdvice(input);
+    setIsTyping(false);
+    setMessages(prev => [...prev, advice]);
   };
 
   return (

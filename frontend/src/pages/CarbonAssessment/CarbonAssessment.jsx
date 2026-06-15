@@ -1,53 +1,59 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, Utensils, Zap, ShoppingBag, ArrowRight, ArrowLeft, CheckCircle, Award, Leaf, TrendingDown, Target } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Award, Leaf, TrendingDown, Target } from 'lucide-react';
 import TTSButton from '../../components/common/TTSButton';
-
-const steps = [
-  { id: 'transport', title: 'Transportation', icon: Car },
-  { id: 'food', title: 'Food Habits', icon: Utensils },
-  { id: 'energy', title: 'Home Energy', icon: Zap },
-  { id: 'shopping', title: 'Shopping', icon: ShoppingBag },
-];
-
-const topActions = [
-  {
-    id: 1,
-    title: "Replace two car trips per week with cycling",
-    monthlySavings: 12,
-    annualSavings: 144,
-    difficulty: "Medium",
-    reason: "Your assessment shows high car dependency for short distances. Cycling short distances cuts emissions significantly while improving health."
-  },
-  {
-    id: 2,
-    title: "Reduce AC usage by one hour daily",
-    monthlySavings: 9,
-    annualSavings: 108,
-    difficulty: "Easy",
-    reason: "Your grid relies heavily on fossil fuels. Small reductions in HVAC usage provide outsized carbon benefits."
-  },
-  {
-    id: 3,
-    title: "Meat-free one day per week",
-    monthlySavings: 6,
-    annualSavings: 72,
-    difficulty: "Easy",
-    reason: "You indicated a high-meat diet. Replacing beef or lamb with plant-based alternatives just one day a week dramatically lowers your footprint."
-  }
-];
+import { assessmentSteps, emissionReductionActions } from '../../constants/assessmentData';
+import { saveAssessmentRecord } from '../../services/trackingService';
 
 export default function CarbonAssessment() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  
+  const [answers, setAnswers] = useState({
+    commuteMode: 'Car (Gasoline)',
+    commuteDistance: 50,
+    diet: 'Meat in most meals',
+    electricity: 'Standard Grid',
+    shopping: 'Frequently (Monthly)'
+  });
   const navigate = useNavigate();
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < assessmentSteps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
+      calculateAndSaveScore();
       setShowResults(true);
     }
+  };
+
+  const calculateAndSaveScore = () => {
+    // Deterministic emission factors
+    const transportFactors = { 'Car (Gasoline)': 0.4, 'Car (Electric)': 0.15, 'Public Transit': 0.1, 'Bicycle / Walk': 0 };
+    const foodFactors = { 'Meat in most meals': 60, 'Meat rarely (Flexitarian)': 40, 'Vegetarian': 25, 'Vegan': 15 };
+    const energyFactors = { 'Standard Grid': 50, '100% Renewable Plan': 10, 'Solar Panels': 5, 'Not Sure': 50 };
+    const shoppingFactors = { 'Frequently (Monthly)': 40, 'Occasionally': 25, 'Rarely (Only when needed)': 15, 'I prefer second-hand': 5 };
+
+    const transportImpact = (answers.commuteDistance * (transportFactors[answers.commuteMode] || 0.4));
+    const foodImpact = foodFactors[answers.diet] || 60;
+    const energyImpact = energyFactors[answers.electricity] || 50;
+    const shoppingImpact = shoppingFactors[answers.shopping] || 40;
+
+    const carbonScore = Number((transportImpact + foodImpact + energyImpact + shoppingImpact).toFixed(1));
+    const sustainabilityScore = Math.max(0, Math.min(100, Math.round(100 - (carbonScore / 3))));
+
+    const record = {
+      carbonScore,
+      sustainabilityScore,
+      categoryBreakdown: [
+        { name: 'Transport', value: Number(transportImpact.toFixed(1)), color: '#059669' },
+        { name: 'Home Energy', value: Number(energyImpact.toFixed(1)), color: '#0d9488' },
+        { name: 'Food', value: Number(foodImpact.toFixed(1)), color: '#3b82f6' },
+        { name: 'Shopping', value: Number(shoppingImpact.toFixed(1)), color: '#8b5cf6' }
+      ]
+    };
+
+    saveAssessmentRecord(record);
   };
 
   const handlePrev = () => {
@@ -69,10 +75,10 @@ export default function CarbonAssessment() {
           <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-slate-200 dark:bg-slate-700 -z-10 rounded-full"></div>
           <div 
             className="absolute left-0 top-1/2 transform -translate-y-1/2 h-1 bg-brand-primary -z-10 rounded-full transition-all duration-500"
-            style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+            style={{ width: `${(currentStep / (assessmentSteps.length - 1)) * 100}%` }}
           ></div>
           
-          {steps.map((step, index) => {
+          {assessmentSteps.map((step, index) => {
             const Icon = step.icon;
             const isActive = index === currentStep;
             const isCompleted = index < currentStep;
@@ -101,10 +107,10 @@ export default function CarbonAssessment() {
           <div className="animate-fade-in" key={currentStep}>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
               {(() => {
-                 const CurrentIcon = steps[currentStep].icon;
+                 const CurrentIcon = assessmentSteps[currentStep].icon;
                  return <CurrentIcon className="text-brand-primary" />;
               })()}
-              {steps[currentStep].title}
+              {assessmentSteps[currentStep].title}
             </h2>
             
             {currentStep === 0 && (
@@ -112,15 +118,21 @@ export default function CarbonAssessment() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">How do you primarily commute to work/school?</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <SelectOption label="Car (Gasoline)" />
-                    <SelectOption label="Car (Electric)" />
-                    <SelectOption label="Public Transit" />
-                    <SelectOption label="Bicycle / Walk" />
+                    <SelectOption name="commute" value="Car (Gasoline)" current={answers.commuteMode} onChange={(val) => setAnswers({...answers, commuteMode: val})} />
+                    <SelectOption name="commute" value="Car (Electric)" current={answers.commuteMode} onChange={(val) => setAnswers({...answers, commuteMode: val})} />
+                    <SelectOption name="commute" value="Public Transit" current={answers.commuteMode} onChange={(val) => setAnswers({...answers, commuteMode: val})} />
+                    <SelectOption name="commute" value="Bicycle / Walk" current={answers.commuteMode} onChange={(val) => setAnswers({...answers, commuteMode: val})} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Average weekly commute distance (miles)</label>
-                  <input type="range" className="w-full accent-brand-primary" min="0" max="500" defaultValue="50" />
+                  <input 
+                    type="range" 
+                    className="w-full accent-brand-primary" 
+                    min="0" max="500" 
+                    value={answers.commuteDistance}
+                    onChange={(e) => setAnswers({...answers, commuteDistance: Number(e.target.value)})} 
+                  />
                   <div className="flex justify-between text-xs text-slate-500 mt-1">
                     <span>0</span>
                     <span>250</span>
@@ -135,10 +147,10 @@ export default function CarbonAssessment() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Which best describes your diet?</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <SelectOption label="Meat in most meals" />
-                    <SelectOption label="Meat rarely (Flexitarian)" />
-                    <SelectOption label="Vegetarian" />
-                    <SelectOption label="Vegan" />
+                    <SelectOption name="diet" value="Meat in most meals" current={answers.diet} onChange={(val) => setAnswers({...answers, diet: val})} />
+                    <SelectOption name="diet" value="Meat rarely (Flexitarian)" current={answers.diet} onChange={(val) => setAnswers({...answers, diet: val})} />
+                    <SelectOption name="diet" value="Vegetarian" current={answers.diet} onChange={(val) => setAnswers({...answers, diet: val})} />
+                    <SelectOption name="diet" value="Vegan" current={answers.diet} onChange={(val) => setAnswers({...answers, diet: val})} />
                   </div>
                 </div>
               </div>
@@ -149,10 +161,10 @@ export default function CarbonAssessment() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">What kind of electricity powers your home?</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <SelectOption label="Standard Grid" />
-                    <SelectOption label="100% Renewable Plan" />
-                    <SelectOption label="Solar Panels" />
-                    <SelectOption label="Not Sure" />
+                    <SelectOption name="energy" value="Standard Grid" current={answers.electricity} onChange={(val) => setAnswers({...answers, electricity: val})} />
+                    <SelectOption name="energy" value="100% Renewable Plan" current={answers.electricity} onChange={(val) => setAnswers({...answers, electricity: val})} />
+                    <SelectOption name="energy" value="Solar Panels" current={answers.electricity} onChange={(val) => setAnswers({...answers, electricity: val})} />
+                    <SelectOption name="energy" value="Not Sure" current={answers.electricity} onChange={(val) => setAnswers({...answers, electricity: val})} />
                   </div>
                 </div>
               </div>
@@ -163,10 +175,10 @@ export default function CarbonAssessment() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">How often do you buy new clothes or electronics?</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <SelectOption label="Frequently (Monthly)" />
-                    <SelectOption label="Occasionally" />
-                    <SelectOption label="Rarely (Only when needed)" />
-                    <SelectOption label="I prefer second-hand" />
+                    <SelectOption name="shopping" value="Frequently (Monthly)" current={answers.shopping} onChange={(val) => setAnswers({...answers, shopping: val})} />
+                    <SelectOption name="shopping" value="Occasionally" current={answers.shopping} onChange={(val) => setAnswers({...answers, shopping: val})} />
+                    <SelectOption name="shopping" value="Rarely (Only when needed)" current={answers.shopping} onChange={(val) => setAnswers({...answers, shopping: val})} />
+                    <SelectOption name="shopping" value="I prefer second-hand" current={answers.shopping} onChange={(val) => setAnswers({...answers, shopping: val})} />
                   </div>
                 </div>
               </div>
@@ -190,8 +202,8 @@ export default function CarbonAssessment() {
               onClick={handleNext}
               className="flex items-center px-6 py-2.5 rounded-lg font-medium bg-brand-primary text-white hover:bg-brand-secondary transition-colors shadow-sm"
             >
-              {currentStep === steps.length - 1 ? 'Analyze Results' : 'Next Step'} 
-              {currentStep !== steps.length - 1 && <ArrowRight size={18} className="ml-2" />}
+              {currentStep === assessmentSteps.length - 1 ? 'Analyze Results' : 'Next Step'} 
+              {currentStep !== assessmentSteps.length - 1 && <ArrowRight size={18} className="ml-2" />}
             </button>
           </div>
         </div>
@@ -208,7 +220,7 @@ export default function CarbonAssessment() {
           </div>
           
           <div className="space-y-6 mb-10">
-            {topActions.map((action, index) => (
+            {emissionReductionActions.map((action, index) => (
               <div key={action.id} className="p-6 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl relative overflow-hidden group hover:border-brand-primary/50 transition-colors">
                 <div className="absolute top-0 left-0 w-2 h-full bg-brand-primary"></div>
                 
@@ -275,12 +287,19 @@ export default function CarbonAssessment() {
   );
 }
 
-function SelectOption({ label }) {
+function SelectOption({ name, value, current, onChange }) {
   return (
     <label className="flex items-center p-4 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:border-brand-primary hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 transition-colors">
-      <input type="radio" name="assessment-radio" className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-slate-300" />
+      <input 
+        type="radio" 
+        name={name}
+        value={value}
+        checked={current === value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-slate-300" 
+      />
       <span className="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
-        {label}
+        {value}
       </span>
     </label>
   );

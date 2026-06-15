@@ -1,43 +1,58 @@
 # Carbon Compass 🌍
 
-[![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-
-An AI-powered sustainability platform that provides personalized, data-driven insights to help users navigate their journey toward a net-zero lifestyle. 
-
-**Hackathon Submission Note:** For deterministic and reliable offline judging, this repository is configured for a **Frontend-Only Mock Evaluation Strategy**. The frontend application demonstrates 100% of the UI/UX, AI agent interactions, and decision matrices natively without relying on live backend latency.
+**Carbon Compass** is an intelligent sustainability platform designed to empower individuals to understand, track, and reduce their environmental impact. By combining deep data visualization, persistence-driven progress tracking, and personalized generative AI coaching, Carbon Compass guides users along their journey toward a net-zero lifestyle.
 
 ---
 
-## 🎯 Problem Statement Alignment Mapping
+## 🎯 The Sustainability Problem
+Global climate change demands individual action, but carbon footprints are complex, opaque, and difficult to manage. Individuals face critical barriers:
+1. They do not know their current impact (**Understand**).
+2. They have no way to measure progress over time (**Track**).
+3. They lack actionable, personalized guidance to make changes (**Reduce**).
 
-This project was meticulously engineered to solve the core challenges outlined in the Hack2Skill Prompt Wars rubric. 
-
-| Hackathon Requirement | Implementation Evidence & File Path |
-| :--- | :--- |
-| **Personalized Insights** | Dynamic feedback loops analyzing the user's specific carbon footprint. <br/>👉 `frontend/src/pages/CarbonAssessment/CarbonAssessment.jsx` |
-| **Generative AI Coaching** | Conversational agent mimicking a Google Gemini-powered sustainability expert. <br/>👉 `frontend/src/pages/AICoach/AICoach.jsx` |
-| **Data Visualization** | Intuitive dashboards utilizing Recharts for immediate carbon impact comprehension. <br/>👉 `frontend/src/pages/Dashboard/Dashboard.jsx` |
-| **Impact Simulation** | "What-if" scenario simulator calculating hypothetical emissions savings. <br/>👉 `frontend/src/pages/ImpactSimulator/ImpactSimulator.jsx` |
-| **Accessibility Focus** | Comprehensive WCAG alignment including Native TTS, Dyslexic Fonts, and High Contrast. <br/>👉 `frontend/src/context/AccessibilityContext.jsx` |
+**Carbon Compass** solves this trilemma by providing an end-to-end sustainability lifecycle platform that translates complex environmental data into accessible, everyday actions.
 
 ---
 
-## 🏗️ Technical Architecture
+## 🧭 Core Workflow & Feature Mapping
 
-Carbon Compass utilizes a decoupled architecture designed for blazing-fast performance.
-* **Frontend:** React + Vite, heavily optimized via `<Suspense>` lazy-loading and dynamic chunk prefetching.
-* **Backend:** FastAPI (Python), providing the structural schema for future real-time Gemini LLM calls.
-* **Accessibility Engine:** Custom React Context providers managing global DOM manipulation for visual and auditory assistance.
+Carbon Compass is meticulously engineered to solve the three core pillars of sustainability management:
 
-See the [ARCHITECTURE.md](./ARCHITECTURE.md) document for a deep dive into the performance optimization and component structure.
+### 1. Understand Your Footprint
+Users must first establish a baseline understanding of their environmental impact.
+| Challenge Requirement | Platform Feature | User Benefit | Core Module |
+| :--- | :--- | :--- | :--- |
+| **Understand Footprint** | **Carbon Assessment** | Precisely identifies baseline emission sources across transport, diet, and energy. | `CarbonAssessment.jsx` |
+| **Understand Footprint** | **Explain My Footprint** | Contextualizes raw data into accessible human language using AI. | `Dashboard.jsx` (Insights) |
+
+### 2. Track Your Progress
+Users must be able to visualize their journey and measure their improvements over time.
+| Challenge Requirement | Platform Feature | User Benefit | Core Module |
+| :--- | :--- | :--- | :--- |
+| **Track Progress** | **Carbon Journey** | Persists historical assessments to measure long-term improvements. | `trackingService.js` |
+| **Track Progress** | **Sustainability Dashboard**| Provides rich visualizations of emission trends and footprint reduction. | `Dashboard.jsx` |
+
+### 3. Reduce Your Emissions
+Users must be empowered with the tools and strategies to actively lower their footprint.
+| Challenge Requirement | Platform Feature | User Benefit | Core Module |
+| :--- | :--- | :--- | :--- |
+| **Reduce Emissions** | **Impact Simulator** | Tests "what-if" reduction strategies before committing to behavioral changes. | `ImpactSimulator.jsx` |
+| **Reduce Emissions** | **Decision Assistant** | Evaluates the environmental impact of daily choices to recommend optimal alternatives. | `DecisionAssistant.jsx` |
+| **Reduce Emissions** | **AI Sustainability Coach** | Provides tailored, actionable advice to reduce emissions using advanced reasoning. | `AICoach.jsx` |
 
 ---
 
-## 🚀 Running the Application Locally
+## ♿ Universal Accessibility
 
-### Frontend (Evaluator Demo Mode)
+Sustainability tools must be usable by everyone. Carbon Compass integrates comprehensive accessibility features directly into its foundation, not as an afterthought:
+* **Native Text-to-Speech:** Read-aloud functionality for users with visual impairments.
+* **Voice Input Navigation:** Hands-free interaction with the AI coaching layer.
+* **Visual Adaptability:** High Contrast modes, Dyslexic-friendly typography, and Reduced Motion states.
+
+---
+
+## 🚀 Getting Started
+
 1. Navigate to the frontend directory:
    ```bash
    cd frontend
@@ -46,13 +61,9 @@ See the [ARCHITECTURE.md](./ARCHITECTURE.md) document for a deep dive into the p
    ```bash
    npm install
    ```
-3. Run the development server:
+3. Run the application:
    ```bash
    npm run dev
    ```
 
-### Production Build
-```bash
-npm run build
-```
-*(The build has been aggressively optimized, yielding an initial JS payload of ~185kB)*
+For a detailed breakdown of the platform's data flow and tracking lifecycle, refer to the [ARCHITECTURE.md](./ARCHITECTURE.md) document.

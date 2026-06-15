@@ -1,5 +1,6 @@
 import json
 import logging
+import functools
 from app.core.config import settings
 from app.schemas.carbon import FootprintExplanation, CarbonScoreResponse, TopActionsResponse, TopAction
 from app.schemas.decision import DecisionRequest, DecisionResponse, DecisionOption
@@ -18,6 +19,13 @@ if not USE_MOCK:
         logger.warning(f"Failed to initialize Gemini: {e}. Falling back to mock.")
         USE_MOCK = True
 
+@functools.lru_cache(maxsize=128)
+def _generate_content_cached(prompt: str) -> dict:
+    if model is None:
+        raise ValueError("Gemini model not initialized")
+    response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+    return json.loads(response.text)
+
 class GeminiService:
     @staticmethod
     def explain_my_footprint(score: CarbonScoreResponse) -> FootprintExplanation:
@@ -32,8 +40,7 @@ class GeminiService:
         
         prompt = f"Analyze this carbon footprint: {score.model_dump_json()}. Return a JSON object with keys: 'explanation', 'biggest_contributor', 'smallest_contributor', 'key_habits' (list of strings), and 'personalized_summary'."
         try:
-            response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-            data = json.loads(response.text)
+            data = _generate_content_cached(prompt)
             return FootprintExplanation(**data)
         except Exception as e:
             logger.error(f"Gemini error: {e}")
@@ -56,8 +63,7 @@ class GeminiService:
             
         prompt = f"Given this carbon score: {score.model_dump_json()}, suggest top 3 actions to reduce emissions. Return JSON with 'actions' list containing objects with: id, title, monthlySavings (float), annualSavings (float), difficulty (Easy/Medium/Hard), reason."
         try:
-            response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-            data = json.loads(response.text)
+            data = _generate_content_cached(prompt)
             return TopActionsResponse(**data)
         except Exception as e:
             logger.error(f"Gemini error: {e}")
@@ -77,8 +83,7 @@ class GeminiService:
             
         prompt = f"Help the user make a sustainable decision. Question: {request.question}. Context: {request.context}. Return strict JSON with 'recommendation_title', 'recommendation_explanation', 'confidence_level', and 'options' (list of 'title', 'isRecommended', 'score', 'co2_impact_kg', 'key_factor', 'pros', 'cons')."
         try:
-            response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-            data = json.loads(response.text)
+            data = _generate_content_cached(prompt)
             return DecisionResponse(**data)
         except Exception as e:
             logger.error(f"Gemini error: {e}")
@@ -96,8 +101,7 @@ class GeminiService:
             
         prompt = f"You are a sustainability coach. The user says: {message}. Reply in strict JSON with a single key 'reply'."
         try:
-            response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-            data = json.loads(response.text)
+            data = _generate_content_cached(prompt)
             return data
         except Exception as e:
             logger.error(f"Gemini error: {e}")

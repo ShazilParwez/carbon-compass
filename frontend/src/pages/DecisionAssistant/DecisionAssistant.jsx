@@ -1,19 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Search, Sparkles, ArrowRight, ThumbsUp, Scale, AlertCircle, Leaf, Mic, Volume2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Sparkles, ArrowRight, ThumbsUp, Scale, AlertCircle, Leaf, Mic, Volume2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import useSpeechRecognition from '../../hooks/useSpeechRecognition';
 import TTSButton from '../../components/common/TTSButton';
-
-const suggestions = [
-  "Should I travel by car, bus, train, or bicycle?",
-  "Should I repair my current phone or buy a new one?",
-  "Should I order food delivery or cook at home?"
-];
+import { decisionPrompts } from '../../constants/decisionData';
+import { evaluateDecisionImpact } from '../../services/decisionService';
 
 export default function DecisionAssistant() {
   const [query, setQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [results, setResults] = useState(null);
+  const [sustainabilityInsights, setSustainabilityInsights] = useState(null);
 
   const { isListening, transcript, startListening, stopListening, resetTranscript, isSupported: isSpeechSupported } = useSpeechRecognition();
 
@@ -23,27 +19,35 @@ export default function DecisionAssistant() {
     }
   }, [transcript]);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
     
     resetTranscript();
     setIsAnalyzing(true);
-    // Simulate AI API call
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setResults(mockResults);
-    }, 1500);
+    
+    // Execute deterministic offline decision evaluation
+    const insights = await evaluateDecisionImpact(query);
+    setIsAnalyzing(false);
+    setSustainabilityInsights(insights);
   };
 
-  const handleSuggestionClick = (suggestion) => {
+  const handleSuggestionClick = async (suggestion) => {
     setQuery(suggestion);
     setIsAnalyzing(true);
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setResults(mockResults);
-    }, 1500);
+    
+    // Execute deterministic offline decision evaluation
+    const insights = await evaluateDecisionImpact(suggestion);
+    setIsAnalyzing(false);
+    setSustainabilityInsights(insights);
   };
+
+  const accessibilitySummary = useMemo(() => {
+    if (!sustainabilityInsights) return '';
+    const recommended = sustainabilityInsights.options.find(o => o.isRecommended);
+    const others = sustainabilityInsights.options.filter(o => !o.isRecommended);
+    return `The recommended option, ${recommended?.title}, produces ${recommended?.co2} kg CO₂. ${others.map(o => ` ${o.title} produces ${o.co2} kg CO₂.`).join('')}`;
+  }, [sustainabilityInsights]);
 
   return (
     <div className="max-w-5xl mx-auto py-8">
@@ -96,10 +100,10 @@ export default function DecisionAssistant() {
           </div>
         </form>
 
-        {!results && !isAnalyzing && (
+        {!sustainabilityInsights && !isAnalyzing && (
           <div className="mt-6 flex flex-wrap gap-2 justify-center">
             <span className="text-sm text-slate-500 dark:text-slate-400 py-2 mr-2">Try asking:</span>
-            {suggestions.map((suggestion, idx) => (
+            {decisionPrompts.map((suggestion, idx) => (
               <button 
                 key={idx}
                 onClick={() => handleSuggestionClick(suggestion)}
@@ -121,7 +125,7 @@ export default function DecisionAssistant() {
       )}
 
       {/* Results Section */}
-      {results && !isAnalyzing && (
+      {sustainabilityInsights && !isAnalyzing && (
         <div className="animate-fade-in space-y-8">
           
           {/* AI Explanation / Recommendation */}
@@ -135,16 +139,16 @@ export default function DecisionAssistant() {
                   <ThumbsUp size={18} />
                   AI Recommendation
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">{results.recommendation.title}</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">{sustainabilityInsights.recommendation.title}</h2>
               </div>
               <TTSButton 
-                text={`${results.recommendation.title}. ${results.recommendation.explanation}`} 
+                text={`${sustainabilityInsights.recommendation.title}. ${sustainabilityInsights.recommendation.explanation}`} 
                 sectionId="decision-recommendation" 
               />
             </div>
             <div className="relative z-10 mt-2">
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">
-                {results.recommendation.explanation}
+                {sustainabilityInsights.recommendation.explanation}
               </p>
             </div>
           </div>
@@ -153,7 +157,7 @@ export default function DecisionAssistant() {
             {/* Comparison Cards */}
             <div className="lg:col-span-2 space-y-4">
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Option Breakdown</h3>
-              {results.options.map((option, idx) => (
+              {sustainabilityInsights.options.map((option, idx) => (
                 <div key={idx} className={`p-6 rounded-2xl border ${option.isRecommended ? 'border-brand-primary bg-white dark:bg-slate-800 shadow-md' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50'}`}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -192,7 +196,7 @@ export default function DecisionAssistant() {
               <div className="sr-only">
                 <p>Emissions Comparison Chart Summary:</p>
                 <ul>
-                  {results.options.map((opt, idx) => (
+                  {sustainabilityInsights.options.map((opt, idx) => (
                     <li key={idx}>{opt.title} produces {opt.co2} kilograms of CO2. {opt.isRecommended ? 'This is the recommended option.' : ''}</li>
                   ))}
                 </ul>
@@ -204,20 +208,19 @@ export default function DecisionAssistant() {
                   <div className="flex justify-between items-start mb-2">
                     <p className="font-bold">Plain Language Summary:</p>
                     <TTSButton 
-                      text={`The recommended option, ${results.options.find(o => o.isRecommended)?.title}, produces ${results.options.find(o => o.isRecommended)?.co2} kilograms of CO2. ${results.options.filter(o => !o.isRecommended).map(o => ` ${o.title} produces ${o.co2} kilograms of CO2.`).join('')}`}
+                      text={accessibilitySummary}
                       sectionId="decision-chart"
                     />
                   </div>
                   <p>
-                    The recommended option, {results.options.find(o => o.isRecommended)?.title}, produces {results.options.find(o => o.isRecommended)?.co2} kg CO₂. 
-                    {results.options.filter(o => !o.isRecommended).map(o => ` ${o.title} produces ${o.co2} kg CO₂.`).join('')}
+                    {accessibilitySummary}
                   </p>
                 </div>
               </div>
 
               <div className="flex-1 min-h-[300px]" aria-hidden="true">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={results.options} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
+                  <BarChart data={sustainabilityInsights.options} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
                     <XAxis type="number" hide />
                     <YAxis dataKey="title" type="category" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} width={80} />
                     <Tooltip 
@@ -226,7 +229,7 @@ export default function DecisionAssistant() {
                     />
                     <Bar dataKey="co2" radius={[0, 4, 4, 0]} barSize={30}>
                       {
-                        results.options.map((entry, index) => (
+                        sustainabilityInsights.options.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.isRecommended ? '#059669' : '#94a3b8'} />
                         ))
                       }
@@ -237,7 +240,7 @@ export default function DecisionAssistant() {
               <div className="mt-6 p-4 bg-brand-light dark:bg-slate-800 rounded-xl flex items-start text-sm">
                 <AlertCircle className="h-5 w-5 text-brand-secondary mr-2 flex-shrink-0" />
                 <p className="text-slate-600 dark:text-slate-300">
-                  Choosing the recommended option saves approximately <span className="font-bold text-brand-primary">{results.options[1].co2 - results.options[0].co2} kg of CO₂</span>.
+                  Choosing the recommended option saves approximately <span className="font-bold text-brand-primary">{sustainabilityInsights.options[1].co2 - sustainabilityInsights.options[0].co2} kg of CO₂</span>.
                 </p>
               </div>
             </div>
@@ -247,37 +250,3 @@ export default function DecisionAssistant() {
     </div>
   );
 }
-
-// Mock Data
-const mockResults = {
-  recommendation: {
-    title: "Take the Train (Amtrak)",
-    explanation: "Based on the distance from NY to DC, traveling by train is the most environmentally sound decision. Electrified rail networks produce a fraction of the emissions per passenger compared to driving a personal vehicle or flying. Additionally, the train takes you city-center to city-center, eliminating the need for airport transit."
-  },
-  options: [
-    {
-      title: "Train",
-      impact: "Low Impact",
-      score: 92,
-      co2: 15.2,
-      factor: "Shared Electric",
-      isRecommended: true
-    },
-    {
-      title: "Car (Gas)",
-      impact: "High Impact",
-      score: 35,
-      co2: 85.5,
-      factor: "Fossil Fuel",
-      isRecommended: false
-    },
-    {
-      title: "Flight",
-      impact: "Very High Impact",
-      score: 12,
-      co2: 125.0,
-      factor: "Aviation Fuel",
-      isRecommended: false
-    }
-  ]
-};
